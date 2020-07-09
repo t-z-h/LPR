@@ -420,10 +420,10 @@ def split_char(colors, card_imgs, model1, model2):
             # 查找垂直直方图波峰
             wave_peaks = find_vertical_weak(gray_img)
 
-            for wave in wave_peaks:
-                cv2.line(card_img, pt1=(wave[0], 5), pt2=(wave[1], 5), color=(0, 0, 255), thickness=2)
-            cv2.imshow("card", card_img)
-            cv2.waitKey(0)
+            # for wave in wave_peaks:
+            #     cv2.line(card_img, pt1=(wave[0], 5), pt2=(wave[1], 5), color=(0, 0, 255), thickness=2)
+            # cv2.imshow("card", card_img)
+            # cv2.waitKey(0)
 
             # 车牌字符数应大于6
             if len(wave_peaks) <= 6:
@@ -537,7 +537,7 @@ chinese_char = ("川", "鄂", "赣", "甘", "贵", "桂", "黑", "沪", "冀", "
 word_num = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C",
             "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P", "Q", "R",
             "S", "T", "U", "V", "W", "X", "Y", "Z")
-model1 = keras.models.load_model('plate_model1.h5')
-model2 = keras.models.load_model('plate_model2.h5')
+model1 = keras.models.load_model('model/plate_model1.h5')
+model2 = keras.models.load_model('model/plate_model2.h5')
 # colors, card_imgs = predict("./img/皖AUB816.jpg")
 # res, colors, img = split_char(colors, card_imgs, model1, model2)
