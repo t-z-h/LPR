@@ -29,8 +29,8 @@ class Application(Frame):
     def createWidgets(self):
         # fm1 头部标题
         # self.fm1 = Frame(self, bg='black')
-        self.titleLabel = Label(self.window_init(), text="车牌识别系统", font=('微软雅黑', 32),
-                                fg="white", bg='black').place(x=630, y=20)
+        self.titleLabel = Label(self.window_init(), text="车牌识别系统", font=('微软雅黑', 40),
+                                fg="black", bg='white').place(x=630, y=20)
 
         # fm2 车牌号botton 车牌识别botton
 
@@ -75,7 +75,7 @@ class Application(Frame):
     def output_predict_sentence(self):
         color, card_imgs = find_position(file_path)
         res, color, img, res_img = split_char(color, card_imgs, model1, model2)
-        if color == "yello":
+        if color == "yellow":
             color = "黄牌"
             self.truthEntry.configure(fg='#FF8C00')
         if color == "blue":
@@ -93,9 +93,9 @@ class Application(Frame):
         predicted_sentence_str = "".join(predicted_sentence_str)
         # print(predicted_sentence_str)
         self.predictEntry.delete(0, END)
-        self.predictEntry.insert(0, predicted_sentence_str)
+        self.predictEntry.insert(0, "   "+predicted_sentence_str)
         self.truthEntry.delete(0, END)
-        self.truthEntry.insert(0, ground_truth)
+        self.truthEntry.insert(0, "   "+ground_truth)
         load = Image.open(res_img).resize((500, 100))
         img = ImageTk.PhotoImage(load)
         self.panel1.config(image=img)
