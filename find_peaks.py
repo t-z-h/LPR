@@ -45,7 +45,6 @@ def find_level_weak(gray_img):
 
 # 查找垂直直方图波峰
 def find_vertical_weak(gray_img):
-        # print(gray_img.shape)
         row_num, col_num = gray_img.shape
         # 去掉车牌上下边缘1个像素，避免白边影响阈值判断
         gray_img = gray_img[1:row_num - 1]

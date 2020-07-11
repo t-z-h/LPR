@@ -37,7 +37,6 @@ def accurate_place(card_img_hsv, limit_min, limit_max, color):
     """
     定位车牌精确位置，并返回
     """
-
     # show_img(card_img_hsv)
     row_num, col_num = card_img_hsv.shape[:2]
     # print("col_num, row_num", col_num, row_num)
@@ -168,7 +167,6 @@ def find_position(car_path):
     # show_img(img_opening)
     # 找到图像边缘
     ret, img_thresh = cv2.threshold(img_opening, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    # show_img(img_thresh)
     img_edge = cv2.Canny(img_thresh, 100, 200)
     # show_img(img_edge)
     # sobel_img = cv2.Sobel(img_opening, -1, 1, 0, ksize=3)
@@ -192,7 +190,7 @@ def find_position(car_path):
     )
     # 筛选车牌轮廓，根据面积筛选
     contours = [cnt for cnt in contours if cv2.contourArea(cnt) > Min_Area]
-    # print('len(contours)', len(contours))
+    print('轮廓', len(contours))
     # 一一排除不是车牌的矩形区域
     car_contours = []
     box_ = []
@@ -234,6 +232,7 @@ def find_position(car_path):
         # print(box)
         height_point = right_point = [0, 0]
         left_point = low_point = [pic_width, pic_hight]
+        # print(pic_width, pic_hight)
         # 确定四个顶点, 根据外接矩形的四个顶点来确定
         for point in box:
             if left_point[0] > point[0]:
@@ -244,6 +243,11 @@ def find_position(car_path):
                 height_point = point
             if right_point[0] < point[0]:
                 right_point = point
+
+            # left_point = point
+            # low_point = point
+            # height_point = point
+            # right_point = point
         # print(left_point, low_point, right_point, height_point, "2")
         # img_copy = cv2.bilateralFilter(img_copy, 9, 20, 20)
         # 正角度
@@ -251,10 +255,13 @@ def find_position(car_path):
             # print("正")
             # 取到变换后右下角的点的位置
             new_right_point = [right_point[0], height_point[1]]
+            # print(new_right_point)
             # 变换后三个点的坐标
             pts2 = np.float32([left_point, height_point, new_right_point])  # 字符只是高度需要改变
+            # print(pts2, "a")
             # 三个点的原坐标
             pts1 = np.float32([left_point, height_point, right_point])
+            # print(pts1, "b")
             # 得到仿射变换矩阵
             M = cv2.getAffineTransform(pts1, pts2)
             # dst = cv2.warpAffine(oldimg, M, (pic_width, pic_hight))
@@ -265,14 +272,14 @@ def find_position(car_path):
             # 截取角度矫正后的图像
             card_img = dst[int(left_point[1]):int(height_point[1]), int(left_point[0]):int(new_right_point[0])]
             card_imgs.append(card_img)
-            # cv2.imshow("card", card_img)
-            # cv2.waitKey(0)
         # 负角度
         elif left_point[1] > right_point[1]:
             # print("负")
             new_left_point = [left_point[0], height_point[1]]
             pts2 = np.float32([new_left_point, height_point, right_point])  # 字符只是高度需要改变
+            # print(pts2, "a")
             pts1 = np.float32([left_point, height_point, right_point])
+            # print(pts1, "b")
             M = cv2.getAffineTransform(pts1, pts2)
             # dst = cv2.warpAffine(oldimg, M, (pic_width, pic_hight))
             dst = cv2.warpAffine(img_copy, M, (pic_width, pic_hight))
@@ -281,7 +288,6 @@ def find_position(car_path):
             point_limit(new_left_point)
             card_img = dst[int(right_point[1]):int(height_point[1]), int(new_left_point[0]):int(right_point[0])]
             card_imgs.append(card_img)
-
     # 查看矫正后的图像
     # for car_img in card_imgs:
     #     show_img(car_img)
@@ -290,6 +296,8 @@ def find_position(car_path):
     # ####确定车牌颜色#### #
     for card_index, card_img in enumerate(card_imgs):
         green = yellow = blue = 0
+        # print(card_img.shape)
+        # show_img(card_img)
         # 转换HSV
         card_img_hsv = cv2.cvtColor(card_img, cv2.COLOR_BGR2HSV)
         # 有转换失败的可能，原因来自于上面矫正矩形出错
@@ -361,13 +369,16 @@ def find_position(car_path):
         # 如果它们相等，则表示定位的车牌位置为空
         if yl == yh and xl == xr:
             continue
+        need_accurate = False
         # 如果列的起始位置大于等于列的终止位置，则需要重新确认位置
         if yl >= yh:
             yl = 0
             yh = row_num
+            need_accurate = True
         if xl >= xr:
             xl = 0
             xr = col_num
+            need_accurate = True
 
         # show_img(card_img)
 
@@ -376,6 +387,21 @@ def find_position(car_path):
         card_imgs[card_index] = card_img[yl:yh, xl + 2:xr] if color != "green" or yl < (yh - yl) // 4 else \
             card_img[yl - (yh - yl) // 4:yh, xl + 2:xr]
         # card_imgs[card_index] = card_img[yl:yh, xl + 2:xr]
+
+        if need_accurate:  # 可能x或y方向未缩小，需要再试一次
+            card_img = card_imgs[card_index]
+            card_img_hsv = cv2.cvtColor(card_img, cv2.COLOR_BGR2HSV)
+            xl, xr, yh, yl = accurate_place(card_img_hsv, limit_min, limit_max, color)
+            if yl == yh and xl == xr:
+                continue
+            if yl >= yh:
+                yl = 0
+                yh = row_num
+            if xl >= xr:
+                xl = 0
+                xr = col_num
+        card_imgs[card_index] = card_img[yl:yh, xl + 2:xr] if color != "green" or yl < (yh - yl) // 4 \
+            else card_img[yl - (yh - yl) // 4:yh, xl + 2:xr]
 
     #     print(colors)
     # print(len(card_imgs))
@@ -486,6 +512,8 @@ def split_char(colors, card_imgs, model1, model2):
                 w = abs(part_card.shape[1] - SZ) // 2
                 # 用0填充边框
                 part_card = cv2.copyMakeBorder(part_card, 0, 0, w, w, cv2.BORDER_CONSTANT, value=0)
+                # plt.imshow(part_card, "gray")
+                # plt.show()
 
                 img = cv2.resize(part_card, (SZ, SZ), interpolation=cv2.INTER_CUBIC)
 
@@ -537,7 +565,7 @@ chinese_char = ("川", "鄂", "赣", "甘", "贵", "桂", "黑", "沪", "冀", "
 word_num = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C",
             "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P", "Q", "R",
             "S", "T", "U", "V", "W", "X", "Y", "Z")
-model1 = keras.models.load_model('model/plate_model1.h5')
-model2 = keras.models.load_model('model/plate_model2.h5')
+model1 = keras.models.load_model('model/plate_model1_before3.h5')
+model2 = keras.models.load_model('model/plate_model2-2.h5')
 # colors, card_imgs = predict("./img/皖AUB816.jpg")
 # res, colors, img = split_char(colors, card_imgs, model1, model2)

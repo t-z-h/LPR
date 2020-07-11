@@ -4,7 +4,7 @@
 
 from main import model1, model2, find_position, split_char
 
-colors, card_imgs = find_position("./img/京E51619.jpg")
+colors, card_imgs = find_position("./img/京H99999.jpg")
 res, colors, img, res_img = split_char(colors, card_imgs, model1, model2)
 
 

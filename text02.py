@@ -34,7 +34,7 @@ class Application(Frame):
 
         # fm2 车牌号botton 车牌识别botton
 
-        self.predictButt = Button(self.window_init(), text='车牌号：', bg='black', fg='white',
+        self.predictButt = Label(self.window_init(), text='车牌号：', bg='white', fg='black',
                                   font=('微软雅黑', 20), width='10').place(x=800,
                                                                        y=580)  # , command=self.output_predict_sentence
         # print(self.predictButt)
@@ -42,7 +42,7 @@ class Application(Frame):
                                   width='20', fg='black')
         self.predictEntry.place(x=970, y=580)
         # self.predictEntry.pack()
-        self.truthButto = Button(self.window_init(), text='车牌类型：', bg='black', fg='white',
+        self.truthButto = Label(self.window_init(), text='车牌类型：', bg='white', fg='black',
                                  font=('微软雅黑', 20), width='10').place(x=800, y=640)
         self.truthEntry = Entry(self.window_init(), font=('微软雅黑', 25),
                                 width='20', fg='#22C9C9')
