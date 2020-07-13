@@ -199,15 +199,12 @@ def find_position(car_pic):
     # 筛选车牌轮廓，根据面积筛选
     contours = [cnt for cnt in contours if cv2.contourArea(cnt) > Min_Area]
     # print('len(contours)', len(contours))
-    # 一一排除不是车牌的矩形区域
+    # 排除掉不是车牌的矩形区域
     car_contours = []
     box_ = []
     for cnt in contours:
-        # (x, y, w, h) = cv2.boundingRect(cnt)
-        # print(x, y, w, h)
         # 获取最小外接矩形，返回值为：[中心点坐标，(宽度，高度)，旋转角度]
         rect = cv2.minAreaRect(cnt)
-        # print(rect)
         # 最小外接矩形的中心（width，height）
         area_width, area_height = rect[1]
         if area_width < area_height:
@@ -216,7 +213,6 @@ def find_position(car_pic):
         wh_ratio = area_width / area_height
         # 要求矩形区域长宽比在2到5.5之间，2到5.5是车牌的长宽比，其余的矩形排除
         if wh_ratio > 2 and wh_ratio < 5.5:
-            # print(rect)
             car_contours.append(rect)
             # 以下代码可以不要，只是用用来查看筛选出来的轮廓用到
             box = cv2.boxPoints(rect)

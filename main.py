@@ -46,10 +46,10 @@ def accurate_place(card_img_hsv, limit_min, limit_max, color):
     yh = 0
     yl = row_num
     row_num_limit = config["row_num_limit"]
-    # col_num_limit = col_num
-    col_num_limit = col_num * 0.8 if color != "green" else col_num * 0.6  # 绿色色车牌白色区域不需要
+    col_num_limit = col_num * 0.8
+    # col_num_limit = col_num * 0.8 if color != "green" else col_num * 0.6  # 绿色色车牌白色区域不需要
     # print(col_num_limit)
-    # 找每个点的H, S, V的值，如果在指定范围内count+1，如果count>col_num_limit范围内，再进行判断
+    # 找每个点的H, S, V的值，如果在指定范围内count+1，如果count>col_num_limit，再进行判断
     for i in range(row_num):    # row_num=轮廓行的长度
         count = 0
         for j in range(col_num):
@@ -97,33 +97,6 @@ def seperate_card(img, waves):
         # plt.imshow(img[:, wave[0]:wave[1]], "gray")
         # plt.show()
     return part_cards
-
-
-# 根据设定的阈值和图片直方图，找出波峰，用于分隔字符
-def find_waves(threshold, histogram):
-    # print(len(histogram))
-    # plt.plot(histogram)
-    # plt.show()
-    up_point = -1  # 上升点
-    is_peak = False
-    # print("threshold", threshold)
-    # print("histogram", histogram)
-    # if histogram[0] > threshold:
-    #     up_point = 0
-    #     is_peak = True
-    wave_peaks = []
-    for i, x in enumerate(histogram):
-        if is_peak and x < threshold:
-            if i - up_point > 2:
-                is_peak = False
-                wave_peaks.append((up_point, i))
-        elif not is_peak and x >= threshold:
-            is_peak = True
-            up_point = i
-    if is_peak and up_point != -1 and i - up_point > 4:
-        wave_peaks.append((up_point, i))
-    # print("wave_peaks", wave_peaks)
-    return wave_peaks
 
 
 def show_img(img):
@@ -215,8 +188,26 @@ def find_position(car_path):
     # 画框
     # for box in box_:
     #     oldimg = cv2.drawContours(img_copy, [box], 0, (0, 0, 255), 2)
+    # cv2.imwrite("./q.jpg", oldimg)
     # show_img(oldimg)
+
+    # 查看轮廓
+
     # print(car_contours)
+    # for i in range(len(contours)):
+    #     x, y, w, h = cv2.boundingRect(contours[i])
+    #     newimage = img_copy[y:y + h+10, x:x + w]
+    #     show_img(newimage)
+
+    # print(box_)
+    # box_ = box_[0]
+    # xl, xr, yh, yl = box_[0][0], box_[2][0], box_[2][1], box_[0][1]
+    # print(xl, xr, yh, yl)
+    # p = img_copy[xl:xr, yl:yh]
+    # print(p)
+    # show_img(p)
+    # print(car_contours)
+
 
     card_imgs = []
     # 矩形区域可能是倾斜的矩形，需要矫正，以便使用颜色定位
@@ -229,84 +220,66 @@ def find_position(car_path):
         rect = (rect[0], (rect[1][0] + 3, rect[1][1] + 5), angle)  # 扩大范围，避免车牌边缘被排除
         # 获取四个顶点
         box = cv2.boxPoints(rect)
-        # print(box)
-        height_point = right_point = [0, 0]
+        heigth_point = right_point = [0, 0]
         left_point = low_point = [pic_width, pic_hight]
-        # print(pic_width, pic_hight)
-        # 确定四个顶点, 根据外接矩形的四个顶点来确定
+        # 得到四个顶点, 根据外接矩形的四个顶点来确定
         for point in box:
             if left_point[0] > point[0]:
                 left_point = point
             if low_point[1] > point[1]:
                 low_point = point
-            if height_point[1] < point[1]:
-                height_point = point
+            if heigth_point[1] < point[1]:
+                heigth_point = point
             if right_point[0] < point[0]:
                 right_point = point
-
-            # left_point = point
-            # low_point = point
-            # height_point = point
-            # right_point = point
-        # print(left_point, low_point, right_point, height_point, "2")
-        # img_copy = cv2.bilateralFilter(img_copy, 9, 20, 20)
-        # 正角度
-        if left_point[1] <= right_point[1]:
-            # print("正")
+        print(left_point, low_point, heigth_point, right_point)
+        if left_point[1] <= right_point[1]:  # 正角度
             # 取到变换后右下角的点的位置
-            new_right_point = [right_point[0], height_point[1]]
-            # print(new_right_point)
-            # 变换后三个点的坐标
-            pts2 = np.float32([left_point, height_point, new_right_point])  # 字符只是高度需要改变
-            # print(pts2, "a")
+            new_right_point = [right_point[0], heigth_point[1]]
             # 三个点的原坐标
-            pts1 = np.float32([left_point, height_point, right_point])
-            # print(pts1, "b")
-            # 得到仿射变换矩阵
+            pts1 = np.float32([left_point, heigth_point, right_point])
+            # 变换后三个点的坐标
+            pts2 = np.float32([left_point, heigth_point, new_right_point])  # 字符只是高度需要改变
+            # 得到变换矩阵
             M = cv2.getAffineTransform(pts1, pts2)
-            # dst = cv2.warpAffine(oldimg, M, (pic_width, pic_hight))
+            # 仿射变换
             dst = cv2.warpAffine(img_copy, M, (pic_width, pic_hight))
+            # 负数处理
             point_limit(new_right_point)
-            point_limit(height_point)
+            point_limit(heigth_point)
             point_limit(left_point)
             # 截取角度矫正后的图像
-            card_img = dst[int(left_point[1]):int(height_point[1]), int(left_point[0]):int(new_right_point[0])]
+            card_img = dst[int(left_point[1]):int(heigth_point[1]), int(left_point[0]):int(new_right_point[0])]
             card_imgs.append(card_img)
-        # 负角度
-        elif left_point[1] > right_point[1]:
-            # print("负")
-            new_left_point = [left_point[0], height_point[1]]
-            pts2 = np.float32([new_left_point, height_point, right_point])  # 字符只是高度需要改变
-            # print(pts2, "a")
-            pts1 = np.float32([left_point, height_point, right_point])
-            # print(pts1, "b")
+
+        elif left_point[1] > right_point[1]:  # 负角度
+            new_left_point = [left_point[0], heigth_point[1]]
+            pts2 = np.float32([new_left_point, heigth_point, right_point])  # 字符只是高度需要改变
+            pts1 = np.float32([left_point, heigth_point, right_point])
             M = cv2.getAffineTransform(pts1, pts2)
-            # dst = cv2.warpAffine(oldimg, M, (pic_width, pic_hight))
             dst = cv2.warpAffine(img_copy, M, (pic_width, pic_hight))
             point_limit(right_point)
-            point_limit(height_point)
+            point_limit(heigth_point)
             point_limit(new_left_point)
-            card_img = dst[int(right_point[1]):int(height_point[1]), int(new_left_point[0]):int(right_point[0])]
+            card_img = dst[int(right_point[1]):int(heigth_point[1]), int(new_left_point[0]):int(right_point[0])]
             card_imgs.append(card_img)
     # 查看矫正后的图像
     # for car_img in card_imgs:
     #     show_img(car_img)
     # show_img(img_copy)
+    # print(card_imgs)
     colors = []
     # ####确定车牌颜色#### #
     for card_index, card_img in enumerate(card_imgs):
         green = yellow = blue = 0
-        # print(card_img.shape)
         # show_img(card_img)
         # 转换HSV
         card_img_hsv = cv2.cvtColor(card_img, cv2.COLOR_BGR2HSV)
         # 有转换失败的可能，原因来自于上面矫正矩形出错
         if card_img_hsv is None:
             continue
-        # show_img(card_img_hsv)
         # 获取行的长度和列的长度
         row_num, col_num = card_img_hsv.shape[:2]
-        # print(row_num, col_num)
         # 得到像素点的总个数
         card_img_count = row_num * col_num
         # 渠道每一个像素点的各个通道的值
@@ -327,12 +300,6 @@ def find_position(car_path):
         color = "no"
         # 定义颜色的取值上线和下限
         limit_min = limit_max = 0
-
-        # print("count", card_img_count)
-        # print("green", green)
-        # print("blue", blue)
-        # print("yellow", yellow)
-
         # 假如有一半的像素点为该颜色，则判定它为该颜色
         if yellow * 2 >= card_img_count:
             color = "yellow"
@@ -346,8 +313,6 @@ def find_position(car_path):
             color = "blue"
             limit_min = 100
             limit_max = 124  # 有的图片有色偏偏紫
-
-        # print(color)
         colors.append(color)
         # print(blue, green, yellow, black, white, card_img_count)
 
@@ -365,6 +330,7 @@ def find_position(car_path):
         xr为行的终止位置
         """
         xl, xr, yh, yl = accurate_place(card_img_hsv, limit_min, limit_max, color)
+        # show_img(card_img[yl:yh, xl + 2:xr])
         print(xl, xr, yh, yl)
         # 如果它们相等，则表示定位的车牌位置为空
         if yl == yh and xl == xr:
@@ -430,7 +396,7 @@ def split_char(colors, card_imgs, model1, model2):
 
             # 二值化
             ret, gray_img = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
+            # show_img(gray_img)
             # 查找水平直方图波峰
             wave_peaks = find_level_weak(gray_img)
 
@@ -439,10 +405,12 @@ def split_char(colors, card_imgs, model1, model2):
                 print("无波峰")
                 continue
             # 水平方向的最大的波峰为车牌区域
+            print(wave_peaks)
             wave = max(wave_peaks, key=lambda x: x[1] - x[0])
-
+            print(wave)
+            # show_img(gray_img)
             gray_img = gray_img[wave[0]:wave[1]+1]
-
+            # show_img(gray_img)
             # 查找垂直直方图波峰
             wave_peaks = find_vertical_weak(gray_img)
 
@@ -452,44 +420,38 @@ def split_char(colors, card_imgs, model1, model2):
             # cv2.waitKey(0)
 
             # 车牌字符数应大于6
-            if len(wave_peaks) <= 6:
+            if len(wave_peaks) < 7:
                 print("字符数量不够:", len(wave_peaks))
                 continue
-            # 认为垂直方向，最大的波峰为车牌区域
+            # 拿到垂直方向宽度最大的字符区间
             wave = max(wave_peaks, key=lambda x: x[1] - x[0])
-            # print("wave", wave)
-            # 渠道长度最大的波峰
-            max_wave_dis = wave[1] - wave[0]
+            # 取到宽度最大的字符区间的值
+            max_wave_val = wave[1] - wave[0]
             # print(max_wave_dis / 3)
             # 判断是否是左侧车牌边缘
             # 当垂直方向第一个波峰位置长度 < max_wave_dis / 3 并且波峰的起始位置为0的时候，就把它列为车牌边缘，并删除它
-            if wave_peaks[0][1] - wave_peaks[0][0] < max_wave_dis / 3 and wave_peaks[0][0] == 0:
+            if wave_peaks[0][1] - wave_peaks[0][0] < max_wave_val / 3 and wave_peaks[0][0] == 0:
                 wave_peaks.pop(0)
 
             # 组合分离汉字，例如：川
-            cur_dis = 0
-            # print("wave", wave_peaks, max_wave_dis * 0.6)
-            for j, wave in enumerate(wave_peaks):
-                if wave[1] - wave[0] + cur_dis > max_wave_dis * 0.6:
+            count = 0
+            th_val = max_wave_val * 0.6
+            for index, wave in enumerate(wave_peaks):
+                now_wave = wave[1] - wave[0]
+                if now_wave + count > th_val:
                     break
                 else:
-                    cur_dis += wave[1] - wave[0]
-            # print(j)
-            # print(cur_dis)
-            if j > 0:
-                wave = (wave_peaks[0][0], wave_peaks[j][1])
-                wave_peaks = wave_peaks[j + 1:]
+                    count += wave[1] - wave[0]
+            if index > 0:
+                wave = (wave_peaks[0][0], wave_peaks[index][1])
+                wave_peaks = wave_peaks[index + 1:]
                 wave_peaks.insert(0, wave)
 
             # 去除车牌上的分隔点
-            # plt.imshow(gray_img, "gray")
-            # plt.show()
-
             point = wave_peaks[2]  # 取到车牌上的分割点
-            if point[1] - point[0] < max_wave_dis / 3:  # 如果point的波峰长度小于最长波峰的1/3
+            if point[1] - point[0] < max_wave_val / 3:  # 如果point的波峰长度小于最长波峰的1/3
                 point_img = gray_img[:, point[0]:point[1]]  # 获取到分割点在车牌上的位置
-                # print(np.mean(point_img))
-                if np.mean(point_img) < 255 / 5:  # 如果point_img平均点的值低于255 / 5，则说明它的占面积很小，相当于一个点
+                if np.mean(point_img) < 255 / 5:  # 如果point_img均值低于255 / 5，则说明它的占面积很小，相当于一个点
                     wave_peaks.pop(2)  # 删除分割点
 
             if len(wave_peaks) < 7:  # 如果所有字符长度小于7，说明他不是车牌(车牌的长度应该大于6)
@@ -504,22 +466,29 @@ def split_char(colors, card_imgs, model1, model2):
             for i, part_card in enumerate(part_cards):
                 # 可能是固定车牌的铆钉
                 if np.mean(part_card) < 255 / 5:
-                    print("一个点")
+                    print("一个铆钉")
                     continue
+
+                # cv2.imwrite(f"./vaild_img/c{i}.jpg", part_card)
                 part_card_old = part_card
 
+                # show_img(part_card)
+
                 # 得到左右两边填充值
-                w = abs(part_card.shape[1] - SZ) // 2
+                w = abs(part_card.shape[1] - 20) // 2
                 # 用0填充边框
                 part_card = cv2.copyMakeBorder(part_card, 0, 0, w, w, cv2.BORDER_CONSTANT, value=0)
                 # plt.imshow(part_card, "gray")
                 # plt.show()
 
-                img = cv2.resize(part_card, (SZ, SZ), interpolation=cv2.INTER_CUBIC)
+                # img = cv2.resize(part_card, (SZ, SZ), interpolation=cv2.INTER_CUBIC)
+                img = cv2.resize(part_card, (20, 20), interpolation=cv2.INTER_CUBIC)
+                # img = cv2.resize(part_card, (SZ, SZ), interpolation=cv2.INTER_CUBIC)
+
 
                 th, img = cv2.threshold(img, 127, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY)
 
-                # cv2.imwrite(f"vaild_img/m{i}.jpg", img)
+                # cv2.imwrite(f"vaild_img/c{i}.jpg", img)
                 # plt.imshow(img, "gray")
                 # plt.show()
 
