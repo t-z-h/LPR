@@ -1,8 +1,10 @@
 .idea/
 __pycache__/
 test/
-ckpt/
+project_img
+ckpt
 *.pptx
-vaild_img/
+vaild_img
 main_temp.py
 main - 副本.py
+result

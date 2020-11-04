@@ -137,11 +137,12 @@ def find_position(car_path):
     img_opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
     # show_img(img_opening)
     img_opening = cv2.addWeighted(img, 1, img_opening, -1, 0)
-    # show_img(img_opening)
+    show_img(img_opening)
     # 找到图像边缘
     ret, img_thresh = cv2.threshold(img_opening, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    show_img(img_opening)
     img_edge = cv2.Canny(img_thresh, 100, 200)
-    # show_img(img_edge)
+    show_img(img_edge)
     # sobel_img = cv2.Sobel(img_opening, -1, 1, 0, ksize=3)
     # ret, img_edge = cv2.threshold(sobel_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     # show_img(img_edge)
@@ -152,8 +153,8 @@ def find_position(car_path):
     img_edge1 = cv2.morphologyEx(img_edge, cv2.MORPH_CLOSE, kernel)
     # 开运算：表示的是先进行腐蚀，再进行膨胀操作
     img_edge2 = cv2.morphologyEx(img_edge1, cv2.MORPH_OPEN, kernel)
-    # show_img(img_edge1)
-    # show_img(img_edge2)
+    show_img(img_edge1)
+    show_img(img_edge2)
 
     # 查找图像边缘整体形成的矩形区域，可能有很多，车牌就在其中一个矩形区域中
     contours, hierarchy = cv2.findContours(
